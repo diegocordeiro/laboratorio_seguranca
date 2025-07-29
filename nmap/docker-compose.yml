@@ -1,0 +1,80 @@
+# docker network create --driver bridge redesimulada_bridge
+# nist database vulnerability: https://nvd.nist.gov/vuln/search
+# --script vuln: Executa scripts de Nmap que verificam vulnerabilidades conhecidas.
+# Serviço | Portas | Versão Detectada | Vulnerabilidade Potencial
+# Apache | 8081 (HTTP) | httpd 2.4 | CVE-2021-41773: Vulnerabilidade de execução remota de código (RCE) no Apache HTTP Server 2.4.49. A versão usada (2.4) pode estar vulnerável a ataques de execução de código remoto via diretórios de arquivos maliciosos.
+# SSH | 2222 (SSH) | OpenSSH 8.4p1 | CVE-2021-41617: Vulnerabilidade de buffer overflow no OpenSSH pode permitir que atacantes possam executar código remoto. Outras vulnerabilidades de segurança podem ser exploradas caso o SSH não esteja devidamente configurado.
+# MySQL | 3306 (MySQL) | MySQL 5.7 | CVE-2016-6662: Uma falha que permite a execução remota de código em versões anteriores à 5.7.5. Falta de autenticação apropriada também pode ser um vetor de ataque.
+# Samba | 139, 445 (SMB) | Samba 4.x | CVE-2020-0796: Uma vulnerabilidade crítica no protocolo SMBv3 (EternalBlue) que pode permitir execução remota de código no Samba. Requer uma configuração inadequada do SMB, ou uma versão desatualizada.
+# FTP | 21 (FTP) | Pure-FTPd 1.0.49 | CVE-2021-41773: Vulnerabilidade em FTP devido a falhas de configuração que permitem upload de arquivos maliciosos e execução de código remoto. Recomenda-se desabilitar FTP ou configurá-lo de forma segura.
+# DNS | 53 (UDP/TCP) | BIND 9.18 | CVE-2020-8625: Vulnerabilidade de negação de serviço (DoS) no BIND 9, que pode ser explorada por atacantes para causar falhas no servidor DNS. Outras falhas podem estar relacionadas a resoluções inseguras.
+
+version: '3.8'
+services:
+  apache:
+    image: httpd:2.4
+    container_name: apache
+    ports:
+      - "8081:80"
+    networks:
+      - redesimulada_bridge
+
+  ssh:
+    image: lscr.io/linuxserver/openssh-server:latest
+    container_name: ssh
+    environment:
+      - PASSWORD_ACCESS=true
+      - USER_NAME=user
+      - USER_PASSWORD=password
+    ports:
+      - "2222:2222"
+    networks:
+      - redesimulada_bridge
+
+  mysql:
+    image: biarms/mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    networks:
+      - redesimulada_bridge
+
+  samba:
+    image: servercontainers/samba
+    container_name: samba
+    environment:
+      SAMBA_USERS: user:password
+      SAMBA_SHARES: public:/shared:rw
+    volumes:
+      - ./samba:/shared
+    ports:
+      - "139:139"
+      - "445:445"
+    networks:
+      - redesimulada_bridge
+
+  ftp:
+    image: stilliard/pure-ftpd:hardened
+    container_name: ftp
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    environment:
+      PUBLICHOST: "localhost"
+    networks:
+      - redesimulada_bridge
+
+  dns:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: dns
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    networks:
+      - redesimulada_bridge
+
+networks:
+  redesimulada_bridge:
+    external: true
